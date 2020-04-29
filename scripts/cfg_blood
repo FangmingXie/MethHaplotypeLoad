@@ -1,0 +1,19 @@
+# this is a configuration file
+
+[input]
+# input files
+bam_file: /cndd/emukamel/Desplats_BloodCellFreeDNA/Candidate_Probes/bam_files/blood_mononuclear_SRX838242_processed_reads_no_clonal.bam
+
+bed_file: /cndd/emukamel/Desplats_BloodCellFreeDNA/Candidate_Probes/Lunnon_DMR_sites.slop200.merge.gene.04252017.bed
+
+genome_fa_file: /cndd/junhao/genomes/hg19/Homo_sapiens/UCSC/hg19/Sequence/WholeGenomeFasta/genome.fa 
+
+# input-file config
+read_length_in_bam: 100
+num_headerLines_in_bed: 1
+
+
+[output]
+# output files
+mhl_file: /cndd/fangming/cfDNA/mhl_results/mhl.blood_mononuclear_SRX838242.bed
+ 
