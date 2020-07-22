@@ -31,6 +31,6 @@ do
 	chr=${row[0]}
 	start=${row[1]}
 	end=${row[2]}
-	01.1.get_mc_pattern.sh $bam $chr $((start+1)) $end >> $output
+	01.1.get_mc_pattern_pairedend.sh $bam $chr $((start+1)) $end >> $output
 done < $bed
 

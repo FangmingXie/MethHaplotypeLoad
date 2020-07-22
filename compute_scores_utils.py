@@ -16,6 +16,7 @@ import pandas as pd
 import argparse
 import logging
 import re
+import time
 
 
 def process_strings(strings, consider_pairedend=True):
@@ -121,6 +122,58 @@ def calc_mhl(strings, letter):
 
     return mhls
 
+def calc_mhl_fast(strings, letter, verbose=False):
+    """MHL and uMHL -- same as calc_mhl; improved speed > 5x
+    """
+    if not strings:
+        return [np.nan, np.nan]
+
+    tfi = time.time()
+    
+    letter_lower = letter.lower()
+    letter_upper = letter.upper()
+    if verbose:
+        print("f1", time.time()-tfi)
+
+    length_counts = np.bincount([len(string) for string in strings])
+    dim = len(length_counts) 
+    if verbose:
+        print("f2", time.time()-tfi)
+
+    # methylated
+    substrings_meth = re.split(r'{}+'.format(letter_lower), letter_lower.join(strings)) # get all substring including empty ones
+    length_counts_meth = np.bincount([len(string) for string in substrings_meth], minlength=dim)
+    
+    # unmethylated
+    substrings_unmeth = re.split(r'{}+'.format(letter_upper), letter_upper.join(strings)) # get all substring including empty ones
+    length_counts_unmeth = np.bincount([len(string) for string in substrings_unmeth], minlength=dim)
+    if verbose:
+        print("f3", time.time()-tfi)
+    
+    length_counts_all = np.vstack([
+        length_counts, 
+        length_counts_meth, 
+        length_counts_unmeth, 
+        ])[:, 1:]
+    if verbose:
+        print("f4", time.time()-tfi)
+    
+    # transform matrix
+    dim = dim - 1 # first entry - 0 length removed
+    trans_mat = np.flip(linalg.hankel((np.arange(dim)+1)[::-1]), axis=0) # lower triangular matrix
+    weights = (np.arange(dim)+1)/(dim*(dim+1)/2)
+    
+    # apply transformation 
+    length_counts_all = np.dot(length_counts_all,trans_mat)
+    fracs = length_counts_all[1:]/length_counts_all[0]
+    mhls = np.dot(fracs, weights)
+    
+    if verbose:
+        print("f6", time.time()-tfi)
+
+    return mhls
+
+
 def main(input_mcinfo, output_mcscores):
 	"""Calc all scores
 	"""
@@ -184,39 +237,39 @@ def main(input_mcinfo, output_mcscores):
 					header=True, index=True, 
 					na_rep='NA')
  
-def create_parser():
-    """
-    """
-    parser = argparse.ArgumentParser()
-    parser.add_argument("-i", "--input_mcinfo", 
-    	required=True,
-    	help="bed format")
-    parser.add_argument("-o", "--output_mcscores", 
-    	required=True,
-    	help="bed format")
-    return parser
-
-def create_logger(name='log'):
-    """
-    args: logger name
-
-    return: a logger object
-    """
-    logging.basicConfig(
-        format='%(asctime)s %(message)s', 
-        datefmt='%m/%d/%Y %I:%M:%S %p',
-        level=logging.INFO)
-    return logging.getLogger(name)
-
-if __name__ == '__main__':
-
-	log = create_logger()
-	parser = create_parser()
-	args = parser.parse_args()
-
-	input_mcinfo = args.input_mcinfo
-	output_mcscores = args.output_mcscores
-	logging.info("input: {}\noutput: {}"
-					.format(input_mcinfo, output_mcscores))
-
-	main(input_mcinfo, output_mcscores)
+# def create_parser():
+#     """
+#     """
+#     parser = argparse.ArgumentParser()
+#     parser.add_argument("-i", "--input_mcinfo", 
+#     	required=True,
+#     	help="bed format")
+#     parser.add_argument("-o", "--output_mcscores", 
+#     	required=True,
+#     	help="bed format")
+#     return parser
+# 
+# def create_logger(name='log'):
+#     """
+#     args: logger name
+# 
+#     return: a logger object
+#     """
+#     logging.basicConfig(
+#         format='%(asctime)s %(message)s', 
+#         datefmt='%m/%d/%Y %I:%M:%S %p',
+#         level=logging.INFO)
+#     return logging.getLogger(name)
+# 
+# if __name__ == '__main__':
+# 
+# 	log = create_logger()
+# 	parser = create_parser()
+# 	args = parser.parse_args()
+# 
+# 	input_mcinfo = args.input_mcinfo
+# 	output_mcscores = args.output_mcscores
+# 	logging.info("input: {}\noutput: {}"
+# 					.format(input_mcinfo, output_mcscores))
+# 
+# 	main(input_mcinfo, output_mcscores)
